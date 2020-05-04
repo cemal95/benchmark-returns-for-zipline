@@ -1,0 +1,42 @@
+import pandas as pd
+from datetime import datetime
+import pytz
+import logbook
+import pandas as pd
+
+# FIRST I CONVERTED THE EXCEL FILE TO CSV BEFOREHAND - READ THE CSV FILE AND SEPARATE IT THROUGH THE ';'
+filepath = '/Users/cemalarican/Desktop/SPYCSV.csv'
+data = pd.read_csv(filepath, sep=';', header=1)
+
+# ONLY CONSIDER THE TIME AND CLOSE COLUMNS
+data = data[['time', 'close']]
+
+# SET THE TIME COLUMN AS THE NEW INDEX - AND WRITE IT TO A NEW CSV FILE FOR THE BENCHMARK RETURNS
+data.set_index('time', inplace=True)
+data.to_csv('/Users/cemalarican/Desktop/NEWDATA.csv')
+
+
+log = logbook.Logger(__name__)
+def get_benchmark_returns(symbol='SPY'):
+
+    filelike = '/Users/cemalarican/Desktop/NEWDATA.csv'
+    log.info("Reading benchmark returns from {}", filelike)
+
+    df = pd.read_csv(
+        filelike,
+        index_col=['time'],
+        parse_dates=['time'],
+    ).tz_localize('utc')
+
+    if 'close' not in df.columns:
+        raise ValueError("The column 'return' not found in the "
+                         "benchmark file \n"
+                         "Expected benchmark file format :\n"
+                         "date, return\n"
+                         "2020-01-02 00:00:00+00:00,0.01\n"
+                         "2020-01-03 00:00:00+00:00,-0.02\n")
+
+    return df['close'].sort_index().pct_change().iloc[1:]
+
+bench = get_benchmark_returns()
+bench
